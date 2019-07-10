@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <link href="assets/style.css" rel="stylesheet" type="text/css"/></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function find_all(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sort_column(elem) {
+    toggle_sort_states(elem);
+    var colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    var key;
+    if (elem.classList.contains('numeric')) {
+        key = key_num;
+    } else if (elem.classList.contains('result')) {
+        key = key_result;
+    } else {
+        key = key_alpha;
+    }
+    sort_table(elem, key(colIndex));
+}
+
+function show_all_extras() {
+    find_all('.col-result').forEach(show_extras);
+}
+
+function hide_all_extras() {
+    find_all('.col-result').forEach(hide_extras);
+}
+
+function show_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.remove("collapsed");
+    expandcollapse.classList.remove("expander");
+    expandcollapse.classList.add("collapser");
+}
+
+function hide_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.add("collapsed");
+    expandcollapse.classList.remove("collapser");
+    expandcollapse.classList.add("expander");
+}
+
+function show_filters() {
+    var filter_items = document.getElementsByClassName('filter');
+    for (var i = 0; i < filter_items.length; i++)
+        filter_items[i].hidden = false;
+}
+
+function add_collapse() {
+    // Add links for show/hide all
+    var resulttable = find('table#results-table');
+    var showhideall = document.createElement("p");
+    showhideall.innerHTML = '<a href="javascript:show_all_extras()">Show all details</a> / ' +
+                            '<a href="javascript:hide_all_extras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    find_all('.col-result').forEach(function(elem) {
+        var collapsed = get_query_parameter('collapsed') || 'Passed';
+        var extras = elem.parentNode.nextElementSibling;
+        var expandcollapse = document.createElement("span");
+        if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add("collapsed");
+            expandcollapse.classList.add("expander");
+        } else {
+            expandcollapse.classList.add("collapser");
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener("click", function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains("collapsed")) {
+                show_extras(event.currentTarget);
+            } else {
+                hide_extras(event.currentTarget);
+            }
+        });
+    })
+}
+
+function get_query_parameter(name) {
+    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () {
+    reset_sort_headers();
+
+    add_collapse();
+
+    show_filters();
+
+    toggle_sort_states(find('.initial-sort'));
+
+    find_all('.sortable').forEach(function(elem) {
+        elem.addEventListener("click",
+                              function(event) {
+                                  sort_column(elem);
+                              }, false)
+    });
+
+};
+
+function sort_table(clicked, key_func) {
+    var rows = find_all('.results-table-row');
+    var reversed = !clicked.classList.contains('asc');
+    var sorted_rows = sort(rows, key_func, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    var thead = document.getElementById("results-table-head");
+    document.getElementById('results-table').remove();
+    var parent = document.createElement("table");
+    parent.id = "results-table";
+    parent.appendChild(thead);
+    sorted_rows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName("BODY")[0].appendChild(parent);
+}
+
+function sort(items, key_func, reversed) {
+    var sort_array = items.map(function(item, i) {
+        return [key_func(item), i];
+    });
+    var multiplier = reversed ? -1 : 1;
+
+    sort_array.sort(function(a, b) {
+        var key_a = a[0];
+        var key_b = b[0];
+        return multiplier * (key_a >= key_b ? 1 : -1);
+    });
+
+    return sort_array.map(function(item) {
+        var index = item[1];
+        return items[index];
+    });
+}
+
+function key_alpha(col_index) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[col_index].firstChild.data.toLowerCase();
+    };
+}
+
+function key_num(col_index) {
+    return function(elem) {
+        return parseFloat(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function key_result(col_index) {
+    return function(elem) {
+        var strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+                       'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function reset_sort_headers() {
+    find_all('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    find_all('.sortable').forEach(function(elem) {
+        var icon = document.createElement("div");
+        icon.className = "sort-icon";
+        icon.textContent = "vvv";
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove("desc", "active");
+        elem.classList.add("asc", "inactive");
+    });
+}
+
+function toggle_sort_states(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        reset_sort_headers();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function is_all_rows_hidden(value) {
+  return value.hidden == false;
+}
+
+function filter_table(elem) {
+    var outcome_att = "data-test-result";
+    var outcome = elem.getAttribute(outcome_att);
+    class_outcome = outcome + " results-table-row";
+    var outcome_rows = document.getElementsByClassName(class_outcome);
+
+    for(var i = 0; i < outcome_rows.length; i++){
+        outcome_rows[i].hidden = !elem.checked;
+    }
+
+    var rows = find_all('.results-table-row').filter(is_all_rows_hidden);
+    var all_rows_hidden = rows.length == 0 ? true : false;
+    var not_found_message = document.getElementById("not-found-message");
+    not_found_message.hidden = !all_rows_hidden;
+}
+</script>
+    <h1>unit_rep.html</h1>
+    <p>Report generated on 10-Jul-2019 at 16:15:46 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v1.21.1</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>JAVA_HOME</td>
+        <td>C:\Program Files (x86)\Java\jre1.8.0_181</td></tr>
+      <tr>
+        <td>Packages</td>
+        <td>{&apos;pytest&apos;: &apos;4.0.2&apos;, &apos;py&apos;: &apos;1.7.0&apos;, &apos;pluggy&apos;: &apos;0.8.0&apos;}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Windows-10-10.0.17134-SP0</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{&apos;sugar&apos;: &apos;0.9.2&apos;, &apos;repeat&apos;: &apos;0.8.0&apos;, &apos;remotedata&apos;: &apos;0.3.1&apos;, &apos;openfiles&apos;: &apos;0.3.1&apos;, &apos;metadata&apos;: &apos;1.8.0&apos;, &apos;html&apos;: &apos;1.21.1&apos;, &apos;doctestplus&apos;: &apos;0.2.0&apos;, &apos;cov&apos;: &apos;2.7.1&apos;, &apos;arraydiff&apos;: &apos;0.3&apos;}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>3.7.1</td></tr></table>
+    <h2>Summary</h2>
+    <p>12 tests ran in 3.52 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">10 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">2 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable numeric" col="duration">Duration</th>
+          <th>Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="xfailed results-table-row">
+        <tr>
+          <td class="col-result">XFailed</td>
+          <td class="col-name">tests/unit/test_customer.py::test_update_after_del</td>
+          <td class="col-duration">0.18</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">@pytest.mark.xfail()<br/>    def test_update_after_del():<br/>        &#x27;&#x27;&#x27;expected case failed - operate on a deleted customer&#x27;&#x27;&#x27;<br/>        try:<br/>            customer = stripe.Customer.modify(customer_id,<br/>&gt;                                  metadata={&#x27;order_id&#x27;: &#x27;6665&#x27;})<br/><br/>unit\test_customer.py:51: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>cls = &lt;class &#x27;stripe.api_resources.customer.Customer&#x27;&gt;<br/>sid = &#x27;cus_FPbPinDsHWKs6v&#x27;, params = {&#x27;metadata&#x27;: {&#x27;order_id&#x27;: &#x27;6665&#x27;}}<br/>url = &#x27;/v1/customers/cus_FPbPinDsHWKs6v&#x27;<br/><br/>    @classmethod<br/>    def modify(cls, sid, **params):<br/>        url = &quot;%s/%s&quot; % (cls.class_url(), quote_plus(util.utf8(sid)))<br/>&gt;       return cls._static_request(&quot;post&quot;, url, **params)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_resources\abstract\updateable_api_resource.py:12: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>cls = &lt;class &#x27;stripe.api_resources.customer.Customer&#x27;&gt;, method = &#x27;post&#x27;<br/>url = &#x27;/v1/customers/cus_FPbPinDsHWKs6v&#x27;, api_key = None, idempotency_key = None<br/>stripe_version = None, stripe_account = None<br/>params = {&#x27;metadata&#x27;: {&#x27;order_id&#x27;: &#x27;6665&#x27;}}<br/>requestor = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D80549438&gt;<br/>headers = None<br/><br/>    @classmethod<br/>    def _static_request(<br/>        cls,<br/>        method,<br/>        url,<br/>        api_key=None,<br/>        idempotency_key=None,<br/>        stripe_version=None,<br/>        stripe_account=None,<br/>        **params<br/>    ):<br/>        requestor = api_requestor.APIRequestor(<br/>            api_key, api_version=stripe_version, account=stripe_account<br/>        )<br/>        headers = util.populate_headers(idempotency_key)<br/>&gt;       response, api_key = requestor.request(method, url, params, headers)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_resources\abstract\api_resource.py:62: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>self = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D80549438&gt;<br/>method = &#x27;post&#x27;, url = &#x27;/v1/customers/cus_FPbPinDsHWKs6v&#x27;<br/>params = {&#x27;metadata&#x27;: {&#x27;order_id&#x27;: &#x27;6665&#x27;}}, headers = None<br/><br/>    def request(self, method, url, params=None, headers=None):<br/>        rbody, rcode, rheaders, my_api_key = self.request_raw(<br/>            method.lower(), url, params, headers<br/>        )<br/>&gt;       resp = self.interpret_response(rbody, rcode, rheaders)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_requestor.py:121: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>self = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D80549438&gt;<br/>rbody = &#x27;{\n  &quot;error&quot;: {\n    &quot;code&quot;: &quot;resource_missing&quot;,\n    &quot;doc_url&quot;: &quot;https://stripe.com/docs/error-codes/resource-missin... &quot;message&quot;: &quot;No such customer: cus_FPbPinDsHWKs6v&quot;,\n    &quot;param&quot;: &quot;id&quot;,\n    &quot;type&quot;: &quot;invalid_request_error&quot;\n  }\n}\n&#x27;<br/>rcode = 400<br/>rheaders = {&#x27;Server&#x27;: &#x27;nginx&#x27;, &#x27;Date&#x27;: &#x27;Wed, 10 Jul 2019 20:15:43 GMT&#x27;, &#x27;Content-Type&#x27;: &#x27;application/json&#x27;, &#x27;Content-Length&#x27;: &#x27;23...bHxT2e9Z&#x27;, &#x27;stripe-version&#x27;: &#x27;2019-05-16&#x27;, &#x27;Strict-Transport-Security&#x27;: &#x27;max-age=31556926; includeSubDomains; preload&#x27;}<br/><br/>    def interpret_response(self, rbody, rcode, rheaders):<br/>        try:<br/>            if hasattr(rbody, &quot;decode&quot;):<br/>                rbody = rbody.decode(&quot;utf-8&quot;)<br/>            resp = StripeResponse(rbody, rcode, rheaders)<br/>        except Exception:<br/>            raise error.APIError(<br/>                &quot;Invalid response body from API: %s &quot;<br/>                &quot;(HTTP response code was %d)&quot; % (rbody, rcode),<br/>                rbody,<br/>                rcode,<br/>                rheaders,<br/>            )<br/>        if not 200 &lt;= rcode &lt; 300:<br/>&gt;           self.handle_error_response(rbody, rcode, resp.data, rheaders)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_requestor.py:372: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>self = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D80549438&gt;<br/>rbody = &#x27;{\n  &quot;error&quot;: {\n    &quot;code&quot;: &quot;resource_missing&quot;,\n    &quot;doc_url&quot;: &quot;https://stripe.com/docs/error-codes/resource-missin... &quot;message&quot;: &quot;No such customer: cus_FPbPinDsHWKs6v&quot;,\n    &quot;param&quot;: &quot;id&quot;,\n    &quot;type&quot;: &quot;invalid_request_error&quot;\n  }\n}\n&#x27;<br/>rcode = 400<br/>resp = {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;resource_missing&#x27;, &#x27;doc_url&#x27;: &#x27;https://stripe.com/docs/error-codes/resource-missing&#x27;, &#x27;message&#x27;: &#x27;No such customer: cus_FPbPinDsHWKs6v&#x27;, &#x27;param&#x27;: &#x27;id&#x27;, ...}}<br/>rheaders = {&#x27;Server&#x27;: &#x27;nginx&#x27;, &#x27;Date&#x27;: &#x27;Wed, 10 Jul 2019 20:15:43 GMT&#x27;, &#x27;Content-Type&#x27;: &#x27;application/json&#x27;, &#x27;Content-Length&#x27;: &#x27;23...bHxT2e9Z&#x27;, &#x27;stripe-version&#x27;: &#x27;2019-05-16&#x27;, &#x27;Strict-Transport-Security&#x27;: &#x27;max-age=31556926; includeSubDomains; preload&#x27;}<br/><br/>    def handle_error_response(self, rbody, rcode, resp, rheaders):<br/>        try:<br/>            error_data = resp[&quot;error&quot;]<br/>        except (KeyError, TypeError):<br/>            raise error.APIError(<br/>                &quot;Invalid response object from API: %r (HTTP response code &quot;<br/>                &quot;was %d)&quot; % (rbody, rcode),<br/>                rbody,<br/>                rcode,<br/>                resp,<br/>            )<br/>    <br/>        err = None<br/>    <br/>        # OAuth errors are a JSON object where `error` is a string. In<br/>        # contrast, in API errors, `error` is a hash with sub-keys. We use<br/>        # this property to distinguish between OAuth and API errors.<br/>        if isinstance(error_data, six.string_types):<br/>            err = self.specific_oauth_error(<br/>                rbody, rcode, resp, rheaders, error_data<br/>            )<br/>    <br/>        if err is None:<br/>            err = self.specific_api_error(<br/>                rbody, rcode, resp, rheaders, error_data<br/>            )<br/>    <br/>&gt;       raise err<br/><span class="error">E       stripe.error.InvalidRequestError: Request req_fcyvTEbHxT2e9Z: No such customer: cus_FPbPinDsHWKs6v</span><br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_requestor.py:151: InvalidRequestError<br/><br/>During handling of the above exception, another exception occurred:<br/><br/>    @pytest.mark.xfail()<br/>    def test_update_after_del():<br/>        &#x27;&#x27;&#x27;expected case failed - operate on a deleted customer&#x27;&#x27;&#x27;<br/>        try:<br/>            customer = stripe.Customer.modify(customer_id,<br/>                                   metadata={&#x27;order_id&#x27;: &#x27;6665&#x27;})<br/>            print(str(customer))<br/>    <br/>        except stripe.error.InvalidRequestError as e:<br/>            &#x27;&#x27;&#x27;simple check to verify the exception occurence&#x27;&#x27;&#x27;<br/>            print(&#x27;InvalidRequestError:&#x27;)<br/>&gt;           assert not e<br/><span class="error">E           AssertionError: assert not InvalidRequestError(message=&#x27;No such customer: cus_FPbPinDsHWKs6v&#x27;, param=&#x27;id&#x27;, code=&#x27;resource_missing&#x27;, http_status=400, request_id=&#x27;req_fcyvTEbHxT2e9Z&#x27;)</span><br/><br/>unit\test_customer.py:57: AssertionError<br/>----------------------------- Captured stdout call -----------------------------<br/>InvalidRequestError:
+</div></td></tr></tbody>
+      <tbody class="xfailed results-table-row">
+        <tr>
+          <td class="col-result">XFailed</td>
+          <td class="col-name">tests/unit/test_product.py::test_update_after_del</td>
+          <td class="col-duration">0.17</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">@pytest.mark.xfail()<br/>    def test_update_after_del():<br/>        &#x27;&#x27;&#x27;expected case failed - operate on a deleted product&#x27;&#x27;&#x27;<br/>        try:<br/>            stripe.Product.modify(product_id,<br/>&gt;                       name=&#x27;Golden Lawn Services&#x27;)<br/><br/>unit\test_product.py:51: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>cls = &lt;class &#x27;stripe.api_resources.product.Product&#x27;&gt;<br/>sid = &#x27;prod_FPbP5HKalEeJ7e&#x27;, params = {&#x27;name&#x27;: &#x27;Golden Lawn Services&#x27;}<br/>url = &#x27;/v1/products/prod_FPbP5HKalEeJ7e&#x27;<br/><br/>    @classmethod<br/>    def modify(cls, sid, **params):<br/>        url = &quot;%s/%s&quot; % (cls.class_url(), quote_plus(util.utf8(sid)))<br/>&gt;       return cls._static_request(&quot;post&quot;, url, **params)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_resources\abstract\updateable_api_resource.py:12: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>cls = &lt;class &#x27;stripe.api_resources.product.Product&#x27;&gt;, method = &#x27;post&#x27;<br/>url = &#x27;/v1/products/prod_FPbP5HKalEeJ7e&#x27;, api_key = None, idempotency_key = None<br/>stripe_version = None, stripe_account = None<br/>params = {&#x27;name&#x27;: &#x27;Golden Lawn Services&#x27;}<br/>requestor = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D805CD048&gt;<br/>headers = None<br/><br/>    @classmethod<br/>    def _static_request(<br/>        cls,<br/>        method,<br/>        url,<br/>        api_key=None,<br/>        idempotency_key=None,<br/>        stripe_version=None,<br/>        stripe_account=None,<br/>        **params<br/>    ):<br/>        requestor = api_requestor.APIRequestor(<br/>            api_key, api_version=stripe_version, account=stripe_account<br/>        )<br/>        headers = util.populate_headers(idempotency_key)<br/>&gt;       response, api_key = requestor.request(method, url, params, headers)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_resources\abstract\api_resource.py:62: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>self = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D805CD048&gt;<br/>method = &#x27;post&#x27;, url = &#x27;/v1/products/prod_FPbP5HKalEeJ7e&#x27;<br/>params = {&#x27;name&#x27;: &#x27;Golden Lawn Services&#x27;}, headers = None<br/><br/>    def request(self, method, url, params=None, headers=None):<br/>        rbody, rcode, rheaders, my_api_key = self.request_raw(<br/>            method.lower(), url, params, headers<br/>        )<br/>&gt;       resp = self.interpret_response(rbody, rcode, rheaders)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_requestor.py:121: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>self = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D805CD048&gt;<br/>rbody = &#x27;{\n  &quot;error&quot;: {\n    &quot;code&quot;: &quot;resource_missing&quot;,\n    &quot;doc_url&quot;: &quot;https://stripe.com/docs/error-codes/resource-missin... &quot;message&quot;: &quot;No such product: prod_FPbP5HKalEeJ7e&quot;,\n    &quot;param&quot;: &quot;id&quot;,\n    &quot;type&quot;: &quot;invalid_request_error&quot;\n  }\n}\n&#x27;<br/>rcode = 404<br/>rheaders = {&#x27;Server&#x27;: &#x27;nginx&#x27;, &#x27;Date&#x27;: &#x27;Wed, 10 Jul 2019 20:15:45 GMT&#x27;, &#x27;Content-Type&#x27;: &#x27;application/json&#x27;, &#x27;Content-Length&#x27;: &#x27;23...f8zW85pt&#x27;, &#x27;stripe-version&#x27;: &#x27;2019-05-16&#x27;, &#x27;Strict-Transport-Security&#x27;: &#x27;max-age=31556926; includeSubDomains; preload&#x27;}<br/><br/>    def interpret_response(self, rbody, rcode, rheaders):<br/>        try:<br/>            if hasattr(rbody, &quot;decode&quot;):<br/>                rbody = rbody.decode(&quot;utf-8&quot;)<br/>            resp = StripeResponse(rbody, rcode, rheaders)<br/>        except Exception:<br/>            raise error.APIError(<br/>                &quot;Invalid response body from API: %s &quot;<br/>                &quot;(HTTP response code was %d)&quot; % (rbody, rcode),<br/>                rbody,<br/>                rcode,<br/>                rheaders,<br/>            )<br/>        if not 200 &lt;= rcode &lt; 300:<br/>&gt;           self.handle_error_response(rbody, rcode, resp.data, rheaders)<br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_requestor.py:372: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/><br/>self = &lt;stripe.api_requestor.APIRequestor object at 0x0000023D805CD048&gt;<br/>rbody = &#x27;{\n  &quot;error&quot;: {\n    &quot;code&quot;: &quot;resource_missing&quot;,\n    &quot;doc_url&quot;: &quot;https://stripe.com/docs/error-codes/resource-missin... &quot;message&quot;: &quot;No such product: prod_FPbP5HKalEeJ7e&quot;,\n    &quot;param&quot;: &quot;id&quot;,\n    &quot;type&quot;: &quot;invalid_request_error&quot;\n  }\n}\n&#x27;<br/>rcode = 404<br/>resp = {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;resource_missing&#x27;, &#x27;doc_url&#x27;: &#x27;https://stripe.com/docs/error-codes/resource-missing&#x27;, &#x27;message&#x27;: &#x27;No such product: prod_FPbP5HKalEeJ7e&#x27;, &#x27;param&#x27;: &#x27;id&#x27;, ...}}<br/>rheaders = {&#x27;Server&#x27;: &#x27;nginx&#x27;, &#x27;Date&#x27;: &#x27;Wed, 10 Jul 2019 20:15:45 GMT&#x27;, &#x27;Content-Type&#x27;: &#x27;application/json&#x27;, &#x27;Content-Length&#x27;: &#x27;23...f8zW85pt&#x27;, &#x27;stripe-version&#x27;: &#x27;2019-05-16&#x27;, &#x27;Strict-Transport-Security&#x27;: &#x27;max-age=31556926; includeSubDomains; preload&#x27;}<br/><br/>    def handle_error_response(self, rbody, rcode, resp, rheaders):<br/>        try:<br/>            error_data = resp[&quot;error&quot;]<br/>        except (KeyError, TypeError):<br/>            raise error.APIError(<br/>                &quot;Invalid response object from API: %r (HTTP response code &quot;<br/>                &quot;was %d)&quot; % (rbody, rcode),<br/>                rbody,<br/>                rcode,<br/>                resp,<br/>            )<br/>    <br/>        err = None<br/>    <br/>        # OAuth errors are a JSON object where `error` is a string. In<br/>        # contrast, in API errors, `error` is a hash with sub-keys. We use<br/>        # this property to distinguish between OAuth and API errors.<br/>        if isinstance(error_data, six.string_types):<br/>            err = self.specific_oauth_error(<br/>                rbody, rcode, resp, rheaders, error_data<br/>            )<br/>    <br/>        if err is None:<br/>            err = self.specific_api_error(<br/>                rbody, rcode, resp, rheaders, error_data<br/>            )<br/>    <br/>&gt;       raise err<br/><span class="error">E       stripe.error.InvalidRequestError: Request req_gqmqIBf8zW85pt: No such product: prod_FPbP5HKalEeJ7e</span><br/><br/>..\..\Anaconda3\lib\site-packages\stripe\api_requestor.py:151: InvalidRequestError<br/><br/>During handling of the above exception, another exception occurred:<br/><br/>    @pytest.mark.xfail()<br/>    def test_update_after_del():<br/>        &#x27;&#x27;&#x27;expected case failed - operate on a deleted product&#x27;&#x27;&#x27;<br/>        try:<br/>            stripe.Product.modify(product_id,<br/>                        name=&#x27;Golden Lawn Services&#x27;)<br/>        except stripe.error.InvalidRequestError as e:<br/>            body = e.json_body<br/>            err  = body.get(&#x27;error&#x27;, {})<br/>            err_code = err.get(&#x27;code&#x27;)<br/>            err_status = e.http_status<br/>    <br/>            print(&#x27;Status is: %s&#x27; % err_status)<br/>            print(&#x27;Error Code is: %s&#x27; % err_code)<br/>            &#x27;&#x27;&#x27; compare the error message, should be the same&#x27;&#x27;&#x27;<br/>            &#x27;&#x27;&#x27; here did it on pupose to demo the xfail&#x27;&#x27;&#x27;<br/>            &#x27;&#x27;&#x27; html report will show the detail trace info.&#x27;&#x27;&#x27;<br/>&gt;           assert &quot;resource_missing&quot; != err_code<br/><span class="error">E           AssertionError: assert &#x27;resource_missing&#x27; != &#x27;resource_missing&#x27;</span><br/><br/>unit\test_product.py:63: AssertionError<br/>----------------------------- Captured stdout call -----------------------------<br/>Status is: 404
+Error Code is: resource_missing
+</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_customer.py::test_create</td>
+          <td class="col-duration">0.21</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">----------------------------- Captured stdout call -----------------------------<br/> customer crated.  id: cus_FPbPinDsHWKs6v
+</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_customer.py::test_create_duplicate</td>
+          <td class="col-duration">0.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">----------------------------- Captured stdout call -----------------------------<br/> customer2 id: cus_FPbPeHaujR0dod
+</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_customer.py::test_retrieve</td>
+          <td class="col-duration">0.15</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_customer.py::test_delete</td>
+          <td class="col-duration">0.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_customer.py::test_create_failed</td>
+          <td class="col-duration">0.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">----------------------------- Captured stdout call -----------------------------<br/>Status is 400
+Code is: resource_missing
+Error Message: No such token: tok_InvalidCard
+</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_product.py::test_create</td>
+          <td class="col-duration">0.17</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_product.py::test_retrieve</td>
+          <td class="col-duration">0.13</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_product.py::test_update</td>
+          <td class="col-duration">0.20</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_product.py::test_list</td>
+          <td class="col-duration">0.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/unit/test_product.py::test_delete</td>
+          <td class="col-duration">0.20</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody></table></body></html>
