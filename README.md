@@ -37,7 +37,7 @@ $pytest --html=regression.report  | *for all cases, and generate report*
 * [stripe](https://https://stripe.com/docs/api) -   Stipe API library. 
 
 
-## Authors
+## Author
 
 * **Daniel Hao** - *Initial work* 
 
@@ -45,4 +45,7 @@ $pytest --html=regression.report  | *for all cases, and generate report*
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+
+## Acknowledgements
+* This project is purely inspired by Eric challenges.
 
