@@ -6,8 +6,8 @@ This project is to demonstrate how to develop the basic API tests by employing t
 ```
 It will need python 3.6+, pytest 4.0.2, and stripe library.
 
-You will also need to register with stripe.com to get an api key since all API uses 
-API keys to authenticate requests. 
+You will also need to register with stripe.com to get an api key since all
+API uses the key(s) to authenticate requests. 
 ```
 
 ### Installing
