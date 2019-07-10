@@ -5,7 +5,7 @@ import pytest
 
 
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-#print(f' key: {stripe.api_key} ')   #
+
 print('Testing Customer API.... ')
 # test customer realated API
 @pytest.fixture(scope='module')
@@ -57,7 +57,7 @@ def test_update_after_del():
         assert not e 
              
 def test_create_failed(create_customer):
-    '''Expect failure - if use the bad card info to create a customer'''
+    '''Expect failure - it used a bad card info to create a customer'''
     '''more elaboarte on the error message and handling ''' 
 
     try:
