@@ -11,11 +11,8 @@ You will also need to register with stripe.com to get an api key since all API u
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
-
-
 ```
-$ pip install pytest  (and repeat for others) 
+$ pip install pytest  (*and repeat for other components list above*)
 ```
 
 
@@ -23,17 +20,13 @@ $ pip install pytest  (and repeat for others)
 
 In the project directory, issue one of these commands for the target test cases: 
 
-$ pytest -v unit    (for all unit tests)
+command      | meaning 
+------------ | -------------
+$pytest -v unit | *for all unit test cases* 
+$pytest -v func | *for all functionl test cases*
+$pytest --html=regression.report  | *for all cases, and generate report
 
-$ pytest -v func    (for all functional tests) 
 
-Or to run all cases: 
-$ pytest --html=regression.report    (for both test and report generating) 
-
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
 
 ## Built With
 
