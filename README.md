@@ -33,7 +33,7 @@ $pytest --html=regression.report  | *for all cases, and generate report*
 
 * [pytest](https://github.com/pytest-dev/pytest/) - The test framework used
 * [pytest-html](https://pypi.org/project/pytest-html/1.6/) - HTML report generating plug-in
-* [stripe](https://https://stripe.com/docs/api) -   Stipe API for testing. 
+* [stripe](https://https://stripe.com/docs/api) -   Stipe API library. 
 
 
 ## Authors
