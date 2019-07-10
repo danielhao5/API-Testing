@@ -11,6 +11,7 @@ API uses the key(s) to authenticate requests.
 ```
 
 ### Installing
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install all packages:
 
 ```
 $ pip install pytest   *and repeat for other components listed above*
