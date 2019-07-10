@@ -7,6 +7,7 @@ What things you need to install the software and how to install them
 
 ```
 It will need python 3.6+, pytest 4.0.2, ans strip.
+You will also need to regist with stripe.com to get an api key since Stripe API uses API keys to authenticate requests. 
 ```
 
 ### Installing
@@ -21,12 +22,13 @@ $ pip install pytest  (and repeat for others)
 
 ## Running the tests
 
-In the project directory, issue this command for all specific tests:
+In the project directory, issue one of these commands for the target test cases: 
 
 $ pytest -v unit    (for all unit tests)
 
 $ pytest -v func    (for all functional tests) 
 
+Or to run all cases: 
 $ pytest --html=regression.report    (for both test and report generating) 
 
 
@@ -40,10 +42,6 @@ Add additional notes about how to deploy this on a live system
 * [pytest-html](https://pypi.org/project/pytest-html/1.6/) - HTML report generating plug-in
 * [stripe](https://https://stripe.com/docs/api) -   Stipe API for testing. 
 
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
 ## Authors
 
