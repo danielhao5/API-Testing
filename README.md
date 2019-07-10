@@ -13,7 +13,7 @@ API keys to authenticate requests.
 ### Installing
 
 ```
-$ pip install pytest   **and repeat for other components listed above**
+$ pip install pytest   *and repeat for other components listed above*
 ```
 
 
