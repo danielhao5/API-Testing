@@ -27,7 +27,8 @@ $pytest -v unit | *for all unit test cases*
 $pytest -v func | *for all functionl test cases*
 $pytest --html=regression.report  | *for all cases, and generate report*
 
-
+## Running Results
+![Results](unit/unit_test.PNG)
 
 ## Built With
 
