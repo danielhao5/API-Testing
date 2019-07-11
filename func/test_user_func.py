@@ -1,5 +1,5 @@
-'''Function case 1 - New Customer onboard, subcribe a plan, charge, and refund
-   test the API flow, and abort the subsequent cases if previous one failed'''
+'''Function case 1 - New Customer onboard, subscribe a plan, charge, and refund.
+   Test the API flow, it will abort the subsequent cases if previous one failed'''
 
 import stripe
 import os
