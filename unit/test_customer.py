@@ -37,9 +37,11 @@ def test_retrieve():
 
 def test_update_after_create():
     '''modify some metadata of an existing customer'''
+    order_num = '6665'
     customer = stripe.Customer.modify(customer_id,
-                                    metadata={'order_id': '6665'})
-    assert customer
+                                    metadata={'order_id': order_num})
+    order_id = customer['metadata']['order_id']
+    assert order_id == order_num 
     
 
 def test_delete():
