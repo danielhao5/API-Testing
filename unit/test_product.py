@@ -5,17 +5,12 @@ import pytest
 active = 'False'
 
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-#print(f' key: {stripe.api_key} ')   #
-print('Testing Product API ..... ')
-# test create Product 
-@pytest.fixture(scope='module')
-def create_product():
-    # return unique product object with id.
-    return stripe.Product.create(type='service', name='Green Lawn')
-           
-def test_create(create_product):
+print('-----------------------------------')
+print('------Testing Product API --------- ')
+
+def test_create():
     global product_id
-    product = create_product.create(type='service', name='Green Lawn')
+    product = stripe.Product.create(type='service', name='Green Lawn')
     product_id = product['id']
     assert product 
     assert product_id
