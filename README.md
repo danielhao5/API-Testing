@@ -1,5 +1,5 @@
 # API Project 
-This project is to demonstrate how to develop the basic API tests by employing the robust test tool Pytest. The focus is primarily on the CRUD operations on API resources via the SDK.  The chosen API is Stripe, an online payment system, which is very popular in states.  
+This project is to demonstrate how to develop the basic API tests by employing the robust test framework Pytest. The focus is primarily on the CRUD operations on API resources via the SDK.  The chosen API is Stripe, an online payment system, which is very popular in states.  
 
 ### Prerequisites
 
