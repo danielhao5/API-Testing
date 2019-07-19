@@ -44,12 +44,12 @@ def test_update_after_create():
     assert order_id == order_num 
     
 
-def test_delete():
+'''def test_delete():
     '''test delete also serves as the clean-up of resource'''
     response = stripe.Customer.delete(customer_id)
     assert response['deleted'] == True 
 
-
+'''
 @pytest.mark.xfail(strict=True)
 def test_update_after_del():
     '''expected case failed - operate on a deleted customer'''
