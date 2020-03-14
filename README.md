@@ -48,5 +48,5 @@ $pytest --html=regression.html  | *for all cases, and generate report*
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
 ## Acknowledgements
-* This project is purely inspired by Eric challenges.
+* This project is purely inspired by an interviewer's challenges.
 
